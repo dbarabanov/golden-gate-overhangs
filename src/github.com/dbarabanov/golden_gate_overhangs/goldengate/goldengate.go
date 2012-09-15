@@ -1,9 +1,10 @@
 package goldengate
 
 import (
-//    . "github.com/dbarabanov/golden_gate_overhangs/utils"
     "fmt"
     )
+
+const CUTS byte = 5
 
 type Signal struct {
     Overhangs []byte
@@ -20,18 +21,15 @@ type Sinc struct {
 type Node struct {
     Input chan *Signal
     Output []chan *Signal
-    Data byte
+    Overhang byte
     Cost byte
     Level byte
     Index byte
     SignalCounter int
 }
 
-type Source struct {
-    Output []chan Signal
-}
-
-func RunSinc(sinc *Sinc, nil_threshold byte) {
+func RunSinc(sinc *Sinc) {
+    nil_threshold := CUTS
     var nil_counter byte
     for {
         sig := <-sinc.Input
@@ -51,20 +49,30 @@ func RunSinc(sinc *Sinc, nil_threshold byte) {
 }
 
 func RunNode(node *Node) {
-   for {
-       received := <-node.Input
-       if received != nil {
+    nil_threshold := CUTS
+    var nil_counter byte
+    for {
+        received := <-node.Input
+        if received != nil {
 //           fmt.Printf("Node (%v, %v) received: %v\n", node.Level, node.Index, received)
-           received.Cost += node.Cost
-           received.Overhangs = append(received.Overhangs, node.Data)
-//           received.Path[node.Level] = node.Index
-           received.Path = append(received.Path, node.Index)
-           BroadcastSignal(node, received)
-           node.SignalCounter ++
+            sig := CreateInitialSignal(byte(len(received.Path)))
+            sig.Cost = received.Cost + node.Cost
+            sig.Overhangs = make([]byte, len(received.Overhangs), len(received.Overhangs))
+            copy(sig.Overhangs, received.Overhangs)
+            sig.Overhangs = append(sig.Overhangs, node.Overhang)
+            sig.Path = make([]byte, len(received.Path), len(received.Path))
+            sig.Path = append(sig.Path, node.Index)
+            copy(sig.Path, received.Path)
+            node.SignalCounter ++
+            BroadcastSignal(node, sig)
        } else {
-           fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
-           BroadcastSignal(node, nil)
-           return
+            nil_counter++
+                fmt.Printf("Node (%v, %v) received nil. \n", node.Level, node.Index)
+            if nil_counter >= nil_threshold {
+                fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
+                BroadcastSignal(node, nil)
+                return
+            }
        }
    }
 }
@@ -99,9 +107,15 @@ func WireNodeToNodes(sender *Node, receiver []*Node) {
    }
 }
 
-func CreateNode(data byte, cost byte, level byte, index byte) *Node {
+func WireLevels(lower []*Node, higher[]*Node) {
+    for i:= range lower {
+        WireNodeToNodes(lower[i], higher)
+    }
+}
+
+func CreateNode(overhang byte, cost byte, level byte, index byte) *Node {
     node := Node{}
-    node.Data = data
+    node.Overhang = overhang
     node.Cost = cost
     node.Input = make(chan *Signal)
     node.Level = level
@@ -109,10 +123,18 @@ func CreateNode(data byte, cost byte, level byte, index byte) *Node {
     return &node
 }
 
+func CreateLayer(level byte) []*Node {
+    nodes := make([]*Node, CUTS, CUTS)
+    for i := range nodes {
+        nodes[i] = CreateNode(byte(i)*level, byte(i), level, byte(i))
+    }
+    return nodes
+}
+
 func CreateInitialSignal(max_levels byte) *Signal {
     sig := Signal{}
     sig.Cost = 0
-    sig.Overhangs = []byte{} 
+    sig.Overhangs = make([]byte, 0, max_levels)
     sig.Path = make([]byte, 0, max_levels)
     return &sig
 }
@@ -121,6 +143,11 @@ func CreateSinc() *Sinc {
     return &Sinc{make(chan *Signal), make(chan string), 0}
 }
 
-func CreateSource(channels_count byte) Source {
-    return Source{make([]chan Signal, channels_count, channels_count)}
+func SendInitialSignals(nodes []*Node, level_depth byte) {
+    for i:= range nodes {
+        nodes[i].Input<-CreateInitialSignal(level_depth)
+        for _ = range nodes{
+            nodes[i].Input<-nil
+        }
+    }
 }

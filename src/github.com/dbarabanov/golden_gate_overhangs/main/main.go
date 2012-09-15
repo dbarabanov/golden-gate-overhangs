@@ -9,40 +9,36 @@ import (
 
 func main() {
     const TOTAL_JUNCTIONS byte = 8
-    const CUTS byte = 5
+//    const CUTS int = 5
 //    var DEFAULT_CHANNEL_BUFFER_SIZE byte = 10
 
     sinc := CreateSinc()
 
-    nodes := make([]*Node, CUTS, CUTS)
-    for i := range nodes {
-        nodes[i] = CreateNode(EncodeOverhang("ACAT"), 1, 1, byte(i))
-    }
-
-    WireNodesToSinc(nodes, sinc)
-    RunNodes(nodes)
-
-    node0 := CreateNode(EncodeOverhang("ACTT"), 1, 0, 0)
-
+//    nodes := make([]*Node, CUTS, CUTS)
 //    for i := range nodes {
-//        WireNodeToNode(node0, nodes[i])
- //   }
+//        nodes[i] = CreateNode(EncodeOverhang("TTTT"), 1, 1, byte(i))
+//    }
 
-    WireNodeToNodes(node0, nodes)
-    go RunNode(node0)
+    level0 := CreateLayer(0)
+    level1 := CreateLayer(1)
+    level2 := CreateLayer(2)
+    level3 := CreateLayer(3)
 
-    go RunSinc(sinc, CUTS)
+    WireLevels(level0, level1)
+    WireLevels(level1, level2)
+    WireLevels(level2, level3)
+    WireNodesToSinc(level3, sinc)
+
+    RunNodes(level0)
+    RunNodes(level1)
+    RunNodes(level2)
+    RunNodes(level3)
+
+    go RunSinc(sinc)
     
     fmt.Printf("Starting...\n")
-//    for i := range nodes {
-//        nodes[i].Input<-CreateInitialSignal(TOTAL_JUNCTIONS)
-//    }
-    
-    node0.Input<-CreateInitialSignal(TOTAL_JUNCTIONS)
-    node0.Input<-nil
- //   for i := range nodes {
- //       nodes[i].Input<-nil
-  //  }
+    SendInitialSignals(level0, TOTAL_JUNCTIONS)
+
     fmt.Printf("Closing Sinc: %v\n", <-sinc.Output)
 
     time.Sleep(1000)
