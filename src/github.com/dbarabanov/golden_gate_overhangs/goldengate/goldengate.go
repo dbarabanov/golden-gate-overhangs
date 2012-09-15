@@ -42,7 +42,7 @@ func RunSinc(sinc *Sinc, nil_threshold byte) {
             fmt.Printf("sinc received: %v\n", sig)
             nil_counter++
             if nil_counter >= nil_threshold {
-                fmt.Printf("sinc %v is closed.\n", 2)
+                fmt.Printf("sinc is closed.\n")
                 sinc.Output<-fmt.Sprintf("Sinc total signals: %v", sinc.SignalCounter)
                 return
             }
@@ -62,18 +62,30 @@ func RunNode(node *Node) {
            node.Output<-received
            node.SignalCounter ++
        } else {
-//           fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
+           fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
            node.Output<-nil
            return
        }
    }
 }
 
+func RunNodes(nodes []*Node) {
+    for i := range nodes {
+        go RunNode(nodes[i])
+    }
+}
+
 func WireSinc(node *Node, sinc *Sinc) {
    node.Output = sinc.Input
 }
 
-func WireNodes(sender *Node, receiver *Sinc) {
+func WireNodesToSinc(nodes []*Node, sinc *Sinc) {
+    for i := range nodes {
+        nodes[i].Output = sinc.Input
+    }
+}
+
+func WireNodes(sender *Node, receiver *Node) {
    sender.Output = receiver.Input
 }
 
@@ -95,8 +107,8 @@ func CreateInitialSignal(max_levels byte) *Signal {
     return &sig
 }
 
-func CreateSinc() Sinc {
-    return Sinc{make(chan *Signal), make(chan string), 0}
+func CreateSinc() *Sinc {
+    return &Sinc{make(chan *Signal), make(chan string), 0}
 }
 
 func CreateSource(channels_count byte) Source {

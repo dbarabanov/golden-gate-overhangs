@@ -8,35 +8,38 @@ import (
 )
 
 func main() {
-    var TOTAL_JUNCTIONS byte = 8
-//    var TOTAL_CUTS byte = 5
+    const TOTAL_JUNCTIONS byte = 8
+    const CUTS byte = 5
 //    var DEFAULT_CHANNEL_BUFFER_SIZE byte = 10
 
-    fmt.Printf("\nSinc starting....\n")
     sinc := CreateSinc()
+
+    nodes := make([]*Node, CUTS, CUTS)
+    for i := range nodes {
+        nodes[i] = CreateNode(EncodeOverhang("ACAT"), 1, 0, byte(i))
+//        WireSinc(nodes[i], sinc)
+    }
+
+    WireNodesToSinc(nodes, sinc)
+
+    RunNodes(nodes)
+
+    fmt.Printf("Starting...\n")
+    go RunSinc(sinc, CUTS)
+
     
-    node7 := CreateNode(EncodeOverhang("CGAT"), 7, 0, 7)
-    WireSinc(node7, &sinc)
-    go RunNode(node7)
-
-    node8 := CreateNode(EncodeOverhang("GGAT"), 3, 0, 3)
-    WireSinc(node8, &sinc)
-    go RunNode(node8)
-
-    go RunSinc(&sinc, 2)
-
-    node7.Input<-CreateInitialSignal(TOTAL_JUNCTIONS)
-    node7.Input<-nil
-
-    sig := CreateInitialSignal(TOTAL_JUNCTIONS)
-    node8.Input<-sig
-    node8.Input<-sig
-    node8.Input<-nil
+    for i := range nodes {
+        nodes[i].Input<-CreateInitialSignal(TOTAL_JUNCTIONS)
+    }
+    
+    for i := range nodes {
+        nodes[i].Input<-nil
+    }
 
     fmt.Printf("Closing Sinc: %v\n", <-sinc.Output)
 
 
-    time.Sleep(100)
+    time.Sleep(1000)
 }
 
 func Test_utils() {
