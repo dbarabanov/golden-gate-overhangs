@@ -16,28 +16,34 @@ func main() {
 
     nodes := make([]*Node, CUTS, CUTS)
     for i := range nodes {
-        nodes[i] = CreateNode(EncodeOverhang("ACAT"), 1, 0, byte(i))
-//        WireSinc(nodes[i], sinc)
+        nodes[i] = CreateNode(EncodeOverhang("ACAT"), 1, 1, byte(i))
     }
 
     WireNodesToSinc(nodes, sinc)
-
     RunNodes(nodes)
 
-    fmt.Printf("Starting...\n")
+    node0 := CreateNode(EncodeOverhang("ACTT"), 1, 0, 0)
+
+//    for i := range nodes {
+//        WireNodeToNode(node0, nodes[i])
+ //   }
+
+    WireNodeToNodes(node0, nodes)
+    go RunNode(node0)
+
     go RunSinc(sinc, CUTS)
-
     
-    for i := range nodes {
-        nodes[i].Input<-CreateInitialSignal(TOTAL_JUNCTIONS)
-    }
+    fmt.Printf("Starting...\n")
+//    for i := range nodes {
+//        nodes[i].Input<-CreateInitialSignal(TOTAL_JUNCTIONS)
+//    }
     
-    for i := range nodes {
-        nodes[i].Input<-nil
-    }
-
+    node0.Input<-CreateInitialSignal(TOTAL_JUNCTIONS)
+    node0.Input<-nil
+ //   for i := range nodes {
+ //       nodes[i].Input<-nil
+  //  }
     fmt.Printf("Closing Sinc: %v\n", <-sinc.Output)
-
 
     time.Sleep(1000)
 }

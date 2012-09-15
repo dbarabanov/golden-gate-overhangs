@@ -19,7 +19,7 @@ type Sinc struct {
 
 type Node struct {
     Input chan *Signal
-    Output chan *Signal
+    Output []chan *Signal
     Data byte
     Cost byte
     Level byte
@@ -59,14 +59,20 @@ func RunNode(node *Node) {
            received.Overhangs = append(received.Overhangs, node.Data)
 //           received.Path[node.Level] = node.Index
            received.Path = append(received.Path, node.Index)
-           node.Output<-received
+           BroadcastSignal(node, received)
            node.SignalCounter ++
        } else {
            fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
-           node.Output<-nil
+           BroadcastSignal(node, nil)
            return
        }
    }
+}
+
+func BroadcastSignal(node *Node, sig *Signal) {
+    for i := range node.Output {
+        node.Output[i]<-sig
+    }
 }
 
 func RunNodes(nodes []*Node) {
@@ -76,17 +82,21 @@ func RunNodes(nodes []*Node) {
 }
 
 func WireSinc(node *Node, sinc *Sinc) {
-   node.Output = sinc.Input
+   node.Output = make([]chan *Signal, 1, 1)
+   node.Output[0] = sinc.Input
 }
 
 func WireNodesToSinc(nodes []*Node, sinc *Sinc) {
     for i := range nodes {
-        nodes[i].Output = sinc.Input
+        WireSinc(nodes[i], sinc)
     }
 }
 
-func WireNodes(sender *Node, receiver *Node) {
-   sender.Output = receiver.Input
+func WireNodeToNodes(sender *Node, receiver []*Node) {
+   sender.Output = make([]chan *Signal, len(receiver), len(receiver))
+   for i := range sender.Output {
+       sender.Output[i] = receiver[i].Input
+   }
 }
 
 func CreateNode(data byte, cost byte, level byte, index byte) *Node {
