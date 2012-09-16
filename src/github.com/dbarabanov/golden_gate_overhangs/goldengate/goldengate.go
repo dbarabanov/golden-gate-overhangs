@@ -4,7 +4,7 @@ import (
     "fmt"
     )
 
-const CUTS byte = 5
+var CUTS int = 5
 
 type Signal struct {
     Overhangs []byte
@@ -23,14 +23,14 @@ type Node struct {
     Output []chan *Signal
     Overhang byte
     Cost byte
-    Level byte
+    Level int
     Index byte
     SignalCounter int
 }
 
 func RunSinc(sinc *Sinc) {
     nil_threshold := CUTS
-    var nil_counter byte
+    var nil_counter int 
     for {
         sig := <-sinc.Input
         if sig != nil {
@@ -50,12 +50,12 @@ func RunSinc(sinc *Sinc) {
 
 func RunNode(node *Node) {
     nil_threshold := CUTS
-    var nil_counter byte
+    var nil_counter int
     for {
         received := <-node.Input
         if received != nil {
 //           fmt.Printf("Node (%v, %v) received: %v\n", node.Level, node.Index, received)
-            sig := CreateInitialSignal(byte(len(received.Path)))
+            sig := CreateInitialSignal(len(received.Path))
             sig.Cost = received.Cost + node.Cost
             sig.Overhangs = make([]byte, len(received.Overhangs), len(received.Overhangs))
             copy(sig.Overhangs, received.Overhangs)
@@ -67,7 +67,7 @@ func RunNode(node *Node) {
             BroadcastSignal(node, sig)
        } else {
             nil_counter++
-                fmt.Printf("Node (%v, %v) received nil. \n", node.Level, node.Index)
+//                fmt.Printf("Node (%v, %v) received nil. \n", node.Level, node.Index)
             if nil_counter >= nil_threshold {
                 fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
                 BroadcastSignal(node, nil)
@@ -113,7 +113,7 @@ func WireLevels(lower []*Node, higher[]*Node) {
     }
 }
 
-func CreateNode(overhang byte, cost byte, level byte, index byte) *Node {
+func CreateNode(overhang byte, cost byte, level int, index byte) *Node {
     node := Node{}
     node.Overhang = overhang
     node.Cost = cost
@@ -123,15 +123,23 @@ func CreateNode(overhang byte, cost byte, level byte, index byte) *Node {
     return &node
 }
 
-func CreateLayer(level byte) []*Node {
+func CreateRandomLevel(level int) []*Node {
     nodes := make([]*Node, CUTS, CUTS)
     for i := range nodes {
-        nodes[i] = CreateNode(byte(i)*level, byte(i), level, byte(i))
+        nodes[i] = CreateNode(byte(i*level), byte(i), level, byte(i))
     }
     return nodes
 }
 
-func CreateInitialSignal(max_levels byte) *Signal {
+func CreateLevel(overhangs []byte, level int) []*Node {
+    nodes := make([]*Node, len(overhangs), len(overhangs))
+    for i := range nodes {
+        nodes[i] = CreateNode(overhangs[i], byte(i), level, byte(i))
+    }
+    return nodes
+}
+
+func CreateInitialSignal(max_levels int) *Signal {
     sig := Signal{}
     sig.Cost = 0
     sig.Overhangs = make([]byte, 0, max_levels)
@@ -143,11 +151,66 @@ func CreateSinc() *Sinc {
     return &Sinc{make(chan *Signal), make(chan string), 0}
 }
 
-func SendInitialSignals(nodes []*Node, level_depth byte) {
+func SendInitialSignals(nodes []*Node, level_depth int) {
     for i:= range nodes {
         nodes[i].Input<-CreateInitialSignal(level_depth)
         for _ = range nodes{
             nodes[i].Input<-nil
         }
     }
+}
+
+func BuildRandomGrid(total_levels int) ([][]*Node, *Sinc){
+    levels := make([][]*Node, total_levels, total_levels)
+    for i := range levels {
+        levels[i] = CreateRandomLevel(i+1)
+    }
+
+    sinc := CreateSinc()
+    
+    for i := range levels{
+        if i < total_levels-1 {
+            WireLevels(levels[i], levels[i+1])
+        } else {
+            WireNodesToSinc(levels[i], sinc)
+        }
+    }
+
+    for i := range levels {
+        RunNodes(levels[i])
+    }
+
+    go RunSinc(sinc)
+    return levels, sinc
+}
+
+func BuildGrid(input [][]byte) ([][]*Node, *Sinc){
+    CUTS = len(input[0])
+    for _, level := range(input){
+        if len(level) != CUTS {
+            panic("Bad input grid")
+        }
+    }
+    total_levels := len(input)
+    levels := make([][]*Node, total_levels, total_levels)
+    for i := range levels {
+        levels[i] = CreateLevel(input[i], i+1)
+    }
+
+    sinc := CreateSinc()
+    
+    for i := range levels{
+        if i < total_levels-1 {
+            WireLevels(levels[i], levels[i+1])
+        } else {
+            WireNodesToSinc(levels[i], sinc)
+        }
+    }
+
+    for i := range levels {
+        RunNodes(levels[i])
+    }
+
+    go RunSinc(sinc)
+    return levels, sinc
 }

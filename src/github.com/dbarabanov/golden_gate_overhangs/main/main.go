@@ -8,38 +8,22 @@ import (
 )
 
 func main() {
-    const TOTAL_JUNCTIONS byte = 8
-//    const CUTS int = 5
-//    var DEFAULT_CHANNEL_BUFFER_SIZE byte = 10
-
-    sinc := CreateSinc()
+    const TOTAL_JUNCTIONS int = 3
 
 //    nodes := make([]*Node, CUTS, CUTS)
 //    for i := range nodes {
 //        nodes[i] = CreateNode(EncodeOverhang("TTTT"), 1, 1, byte(i))
 //    }
+//    input byte[][] := {{1,2,3,4,5},{6,7,8,9,10}}
+    input := [][]byte{{11,12,13,14,15},{26, 27,28,29,210}}
+    fmt.Printf("%v\n", input)
 
-    level0 := CreateLayer(0)
-    level1 := CreateLayer(1)
-    level2 := CreateLayer(2)
-    level3 := CreateLayer(3)
-
-    WireLevels(level0, level1)
-    WireLevels(level1, level2)
-    WireLevels(level2, level3)
-    WireNodesToSinc(level3, sinc)
-
-    RunNodes(level0)
-    RunNodes(level1)
-    RunNodes(level2)
-    RunNodes(level3)
-
-    go RunSinc(sinc)
-    
     fmt.Printf("Starting...\n")
-    SendInitialSignals(level0, TOTAL_JUNCTIONS)
+//    grid, sinc := BuildRandomGrid(TOTAL_JUNCTIONS)
+    grid, sinc := BuildGrid(input)
+    SendInitialSignals(grid[0], len(grid))
 
-    fmt.Printf("Closing Sinc: %v\n", <-sinc.Output)
+    fmt.Printf("%v\n", <-sinc.Output)
 
     time.Sleep(1000)
 }
