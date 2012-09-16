@@ -5,27 +5,35 @@ import (
     . "github.com/dbarabanov/golden_gate_overhangs/goldengate"
     "fmt"
     "time"
+    "math"
 )
 
 func main() {
-    const TOTAL_JUNCTIONS int = 3
 
-//    nodes := make([]*Node, CUTS, CUTS)
-//    for i := range nodes {
-//        nodes[i] = CreateNode(EncodeOverhang("TTTT"), 1, 1, byte(i))
-//    }
+    const TOTAL_JUNCTIONS = 5
+
+    const CUTS = 5
 //    input byte[][] := {{1,2,3,4,5},{6,7,8,9,10}}
 //    input := [][]byte{{11,12,13,14,15},{26, 27,28,29,210}}
-//    input := GenerateRandomGrid(5, 4)
-    input := GridFromFile("junctions.txt")
-    fmt.Printf("%v\n", input)
+    input := GenerateRandomGrid(CUTS, TOTAL_JUNCTIONS)
+//    input := GridFromFile("junctions.txt")
 
-    fmt.Printf("Starting...\n")
+    fmt.Printf("input: %v\n", input)
+
 //    grid, sinc := BuildRandomGrid(TOTAL_JUNCTIONS)
     grid, sinc := BuildGrid(input)
+
+    fmt.Printf("Starting...\n")
     SendInitialSignals(grid[0], len(grid))
 
-    fmt.Printf("%v\n", <-sinc.Output)
+//    fmt.Printf("%v\n", <-sinc.Output)
+    sig := <-sinc.Best_signal
+    sinc_signals := <-sinc.Total_signals
+    fmt.Printf("Best signal: %v\n", sig)
+    fmt.Printf("Total signals: %v\n", sinc_signals)
+    max_signals_possible := int64(math.Pow(CUTS, TOTAL_JUNCTIONS))
+    fmt.Printf("Max possible: %v\n", max_signals_possible)
+    fmt.Printf("Total signal throughput: %v\n", float64(sinc_signals)/float64(max_signals_possible))
 
     time.Sleep(1000)
 }

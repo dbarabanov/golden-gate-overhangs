@@ -1,10 +1,12 @@
 package goldengate
 
 import (
+    . "github.com/dbarabanov/golden_gate_overhangs/utils"
     "fmt"
     )
 
 var CUTS int = 5
+var MAX_REPEATS byte = 2
 
 type Signal struct {
     Overhangs []byte
@@ -14,8 +16,9 @@ type Signal struct {
 
 type Sinc struct {
     Input chan *Signal
-    Output chan string
     SignalCounter int
+    Best_signal chan Signal
+    Total_signals chan int
 }
 
 type Node struct {
@@ -31,17 +34,22 @@ type Node struct {
 func RunSinc(sinc *Sinc) {
     nil_threshold := CUTS
     var nil_counter int 
+    best_signal := Signal{}
+    best_signal.Cost = 999999
     for {
         sig := <-sinc.Input
         if sig != nil {
-            fmt.Printf("sinc received: %v\n", *sig)
+//            fmt.Printf("sinc received: %v\n", *sig)
+            if sig.Cost < best_signal.Cost {best_signal = *sig}
             sinc.SignalCounter ++
         } else {
-            fmt.Printf("sinc received: %v\n", sig)
+//            fmt.Printf("sinc received: %v\n", sig)
             nil_counter++
             if nil_counter >= nil_threshold {
-                fmt.Printf("sinc is closed.\n")
-                sinc.Output<-fmt.Sprintf("Sinc total signals: %v", sinc.SignalCounter)
+//                fmt.Printf("sinc is closed.\n")
+//                sinc.Output<-fmt.Sprintf("Sinc total signals: %v. Best signal: %v", sinc.SignalCounter, best_signal)
+                sinc.Best_signal<-best_signal
+                sinc.Total_signals<-sinc.SignalCounter
                 return
             }
         }
@@ -51,25 +59,36 @@ func RunSinc(sinc *Sinc) {
 func RunNode(node *Node) {
     nil_threshold := CUTS
     var nil_counter int
+    is_self_compatible := IsSelfCompatible(node.Overhang, MAX_REPEATS)
+    if !is_self_compatible {
+        fmt.Printf("Node (%v, %v) is not self-compatible (%v)\n", node.Level, node.Index, node.Overhang)
+    }
     for {
         received := <-node.Input
+        node.SignalCounter ++
         if received != nil {
 //           fmt.Printf("Node (%v, %v) received: %v\n", node.Level, node.Index, received)
-            sig := CreateInitialSignal(len(received.Path))
-            sig.Cost = received.Cost + node.Cost
-            sig.Overhangs = make([]byte, len(received.Overhangs), len(received.Overhangs))
-            copy(sig.Overhangs, received.Overhangs)
-            sig.Overhangs = append(sig.Overhangs, node.Overhang)
-            sig.Path = make([]byte, len(received.Path), len(received.Path))
-            sig.Path = append(sig.Path, node.Index)
-            copy(sig.Path, received.Path)
-            node.SignalCounter ++
-            BroadcastSignal(node, sig)
+            if is_self_compatible {
+                if IsCompatibleWithMany(node.Overhang, received.Overhangs, MAX_REPEATS) {
+//                if true {
+                    sig := CreateInitialSignal(len(received.Path))
+                    sig.Cost = received.Cost + node.Cost
+                    sig.Overhangs = make([]byte, len(received.Overhangs), len(received.Overhangs))
+                    copy(sig.Overhangs, received.Overhangs)
+                    sig.Overhangs = append(sig.Overhangs, node.Overhang)
+                    sig.Path = make([]byte, len(received.Path), len(received.Path))
+                    sig.Path = append(sig.Path, node.Index)
+                    copy(sig.Path, received.Path)
+                    BroadcastSignal(node, sig)
+                } else {
+//                    fmt.Printf("Node (%v, %v) is not compatible with path: %v\n", node.Level, node.Index, received.Path)
+                }
+            }
        } else {
             nil_counter++
 //                fmt.Printf("Node (%v, %v) received nil. \n", node.Level, node.Index)
             if nil_counter >= nil_threshold {
-                fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
+//                fmt.Printf("Node (%v, %v) final SingalCounter: %v\n", node.Level, node.Index, node.SignalCounter)
                 BroadcastSignal(node, nil)
                 return
             }
@@ -155,7 +174,7 @@ func CreateInitialSignal(max_levels int) *Signal {
 }
 
 func CreateSinc() *Sinc {
-    return &Sinc{make(chan *Signal), make(chan string), 0}
+    return &Sinc{make(chan *Signal), 0, make(chan Signal), make(chan int)}
 }
 
 func SendInitialSignals(nodes []*Node, level_depth int) {

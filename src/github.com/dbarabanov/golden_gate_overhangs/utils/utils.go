@@ -5,6 +5,7 @@ import (
     "math/rand"
     "io/ioutil"
     "strings"
+    "time"
     )
 
 func Encode1(letter string) (encoded byte) {
@@ -160,6 +161,7 @@ func GetRepeatCount(b1 byte, b2 byte) byte {
 }
 
 func GenerateRandomGrid(cuts int, levels int) [][]byte {
+    rand.Seed(time.Now().Unix())
     grid := make([][]byte, levels, levels)
     for i := range grid {
         grid[i] = make([]byte, cuts, cuts)
