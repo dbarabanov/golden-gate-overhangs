@@ -9,7 +9,7 @@ var CUTS int = 5
 type Signal struct {
     Overhangs []byte
     Path []byte
-    Cost byte
+    Cost int
 }
 
 type Sinc struct {
@@ -22,7 +22,7 @@ type Node struct {
     Input chan *Signal
     Output []chan *Signal
     Overhang byte
-    Cost byte
+    Cost int
     Level int
     Index byte
     SignalCounter int
@@ -113,7 +113,7 @@ func WireLevels(lower []*Node, higher[]*Node) {
     }
 }
 
-func CreateNode(overhang byte, cost byte, level int, index byte) *Node {
+func CreateNode(overhang byte, cost int, level int, index byte) *Node {
     node := Node{}
     node.Overhang = overhang
     node.Cost = cost
@@ -126,7 +126,7 @@ func CreateNode(overhang byte, cost byte, level int, index byte) *Node {
 func CreateRandomLevel(level int) []*Node {
     nodes := make([]*Node, CUTS, CUTS)
     for i := range nodes {
-        nodes[i] = CreateNode(byte(i*level), byte(i), level, byte(i))
+        nodes[i] = CreateNode(byte(i*level), i, level, byte(i))
     }
     return nodes
 }
@@ -134,9 +134,16 @@ func CreateRandomLevel(level int) []*Node {
 func CreateLevel(overhangs []byte, level int) []*Node {
     nodes := make([]*Node, len(overhangs), len(overhangs))
     for i := range nodes {
-        nodes[i] = CreateNode(overhangs[i], byte(i), level, byte(i))
+        nodes[i] = CreateNode(overhangs[i], Cost_by_index(i), level, byte(i))
     }
     return nodes
+}
+
+func Cost_by_index (i int) int{
+    if i<CUTS/2 {
+        return CUTS/2-i
+    }
+    return i-CUTS/2
 }
 
 func CreateInitialSignal(max_levels int) *Signal {

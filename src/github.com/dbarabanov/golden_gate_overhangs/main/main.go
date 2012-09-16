@@ -15,7 +15,9 @@ func main() {
 //        nodes[i] = CreateNode(EncodeOverhang("TTTT"), 1, 1, byte(i))
 //    }
 //    input byte[][] := {{1,2,3,4,5},{6,7,8,9,10}}
-    input := [][]byte{{11,12,13,14,15},{26, 27,28,29,210}}
+//    input := [][]byte{{11,12,13,14,15},{26, 27,28,29,210}}
+//    input := GenerateRandomGrid(5, 4)
+    input := GridFromFile("junctions.txt")
     fmt.Printf("%v\n", input)
 
     fmt.Printf("Starting...\n")

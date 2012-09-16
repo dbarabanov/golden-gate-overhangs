@@ -1,6 +1,11 @@
 package utils
 
-import "fmt"
+import (
+    "fmt"
+    "math/rand"
+    "io/ioutil"
+    "strings"
+    )
 
 func Encode1(letter string) (encoded byte) {
 //func Encode1(base string) (encoded byte) {
@@ -152,4 +157,43 @@ func GetRepeatCount(b1 byte, b2 byte) byte {
         (((b1^b2)&4>>2)|((b1^b2)&8>>3)) + 
         (((b1^b2)&16>>4)|((b1^b2)&32>>5)) + 
         (((b1^b2)&64>>6)|((b1^b2)&128>>7)))
+}
+
+func GenerateRandomGrid(cuts int, levels int) [][]byte {
+    grid := make([][]byte, levels, levels)
+    for i := range grid {
+        grid[i] = make([]byte, cuts, cuts)
+        for j := range grid[i]{
+            grid[i][j] = byte(rand.Int())
+        }
+    }
+    return grid
+}
+
+func GridFromFile(filename string) [][]byte {
+    fmt.Printf("Reading file \""+filename+"\".\n")
+    content, err := ioutil.ReadFile(filename)
+    if err != nil {
+        panic("unable to read file \"" + filename+"\".\n")
+    }
+    lines := strings.Split(string(content), "\n")
+
+    if len(lines[len(lines)-1]) == 0 {
+        lines = lines[:len(lines)-1]
+    }
+
+    grid := make([][]byte, len(lines), len(lines))
+
+    for i, line := range lines {
+    //    fmt.Printf("%v line: %v\n", i, line)
+        if len(line) != 8 {
+            panic("Every line must have exactly 8 letters. I.e. \"ATTCGTGT\". Found: " + line)
+        }
+        grid[i] = make([]byte, 5, 5)
+        for j := 0; j<5; j++ {
+            overhang := line[j:j+4]
+            grid[i][j] = EncodeOverhang(overhang)
+        }
+    }
+    return grid
 }
