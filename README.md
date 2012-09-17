@@ -23,6 +23,7 @@ Every 4-bp overhang is encoded by 1 byte and compatibility is determined by bit 
 2) Gradually building sets of inter-compatible overhangs.
 
 We can progressively build a set of inter-compatible overhangs: 
+
 a. Take a first junction. Find all self-compatible overhangs in it. Put each one and it's partner in a new set.
 
 b. Take the next junction. Select all self-compatible overhangs. Compare each overhang and it's partner with every set of overhangs from previous step. If they are compatible, create a new set with itself and partner. If not, discard.
