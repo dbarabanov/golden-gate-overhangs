@@ -3,12 +3,14 @@ For background information refer to J5 paper: http://pubs.acs.org/doi/full/10.10
 This repository is focused on algorithm S4: "Search for the optimal set of Golden Gate assembly piece overhangs". It introduces a few ideas for speedup and parallelization and implements them efficiently in Go.
 
 To run:
+
 1. Install Go (http://golang.org/doc/install)
 2. Supply your set of junctions in junctions.txt file (or use sample)
 3. ./run.sh
 4. See results in results.txt
 
-Speedup ideas
+Speedup ideas:
+
 1. Prebuilt compatibility tables
 There are only 4**4=256 possible 4-bp overhangs. We can pre-build a 256x256 bit compatibility table between all overhangs for different values of MAXIMUM_IDENTITIES_GOLDEN_GATE_OVERHANGS_COMPATIBLE setting. It only requires ~8Kb of memory to hold the bitmasks and we can do lookups very fast. 
 Every 4-bp overhang is encoded by 1 byte and compatibility is determined by bit arithmetic.
