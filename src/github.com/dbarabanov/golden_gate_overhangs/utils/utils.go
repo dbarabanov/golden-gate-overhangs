@@ -9,7 +9,6 @@ import (
     )
 
 func Encode1(letter string) (encoded byte) {
-//func Encode1(base string) (encoded byte) {
 //    letter := strings.ToUpper(base)
     switch {
         case letter == "A":
@@ -98,7 +97,6 @@ func AreCompatible(b1 byte, b2 byte, max_repeats byte) bool {
     return GetRepeatCount(b1, b2) <= max_repeats 
 }
 
-
 func ComplementaryOverhang(overhang string) string {
     return DecodeOverhang(Complementary(EncodeOverhang(overhang)))
 }
@@ -162,6 +160,8 @@ func GetRepeatCount(b1 byte, b2 byte) byte {
 
 func GenerateRandomGrid(cuts int, levels int) [][]byte {
     rand.Seed(time.Now().Unix())
+//    fmt.Printf("Seeding random number disabled. %v\n", time.Now())
+//    rand.Seed(3)
     grid := make([][]byte, levels, levels)
     for i := range grid {
         grid[i] = make([]byte, cuts, cuts)
@@ -172,7 +172,7 @@ func GenerateRandomGrid(cuts int, levels int) [][]byte {
     return grid
 }
 
-func GridFromFile(filename string) [][]byte {
+func GridFromFile(filename string) (overhangs []string, grid[][]byte) {
     fmt.Printf("Reading file \""+filename+"\".\n")
     content, err := ioutil.ReadFile(filename)
     if err != nil {
@@ -184,7 +184,7 @@ func GridFromFile(filename string) [][]byte {
         lines = lines[:len(lines)-1]
     }
 
-    grid := make([][]byte, len(lines), len(lines))
+    grid = make([][]byte, len(lines), len(lines))
 
     for i, line := range lines {
     //    fmt.Printf("%v line: %v\n", i, line)
@@ -197,5 +197,20 @@ func GridFromFile(filename string) [][]byte {
             grid[i][j] = EncodeOverhang(overhang)
         }
     }
-    return grid
+    return lines, grid
+}
+
+func Write_results_to_file(path []byte, overhangs []string, stats string) {
+//    filename := "results_"+time.Now().Format("15-04-05")
+    filename := "results.txt"
+    fmt.Printf("Writing results to \""+filename+"\".\n")
+    results := ""
+    results += stats
+    results += "\nOverhangs: \n\n"
+    if len(path) == len(overhangs) {
+        for i, line := range overhangs {
+            results = results + line[:path[i]]+" "+line[path[i]:]+"\n"
+        }
+    }
+    ioutil.WriteFile(filename, []byte(results), 0777)
 }

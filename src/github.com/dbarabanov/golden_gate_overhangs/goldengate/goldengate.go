@@ -7,7 +7,8 @@ import (
 
 var CUTS int = 5
 var MAX_REPEATS byte = 2
-
+var CHANNEL_BUFFER_SIZE = 10000
+var INFINITE_COST = 999999 
 type Signal struct {
     Overhangs []byte
     Path []byte
@@ -35,7 +36,7 @@ func RunSinc(sinc *Sinc) {
     nil_threshold := CUTS
     var nil_counter int 
     best_signal := Signal{}
-    best_signal.Cost = 999999
+    best_signal.Cost = INFINITE_COST
     for {
         sig := <-sinc.Input
         if sig != nil {
@@ -69,13 +70,15 @@ func RunNode(node *Node) {
         if received != nil {
 //           fmt.Printf("Node (%v, %v) received: %v\n", node.Level, node.Index, received)
             if is_self_compatible {
-                if IsCompatibleWithMany(node.Overhang, received.Overhangs, MAX_REPEATS) {
+                if IsCompatibleWithMany(node.Overhang, received.Overhangs, MAX_REPEATS) &&
+                    IsCompatibleWithMany(Partner(node.Overhang), received.Overhangs, MAX_REPEATS){
 //                if true {
                     sig := CreateInitialSignal(len(received.Path))
                     sig.Cost = received.Cost + node.Cost
                     sig.Overhangs = make([]byte, len(received.Overhangs), len(received.Overhangs))
                     copy(sig.Overhangs, received.Overhangs)
                     sig.Overhangs = append(sig.Overhangs, node.Overhang)
+                    sig.Overhangs = append(sig.Overhangs, Partner(node.Overhang))
                     sig.Path = make([]byte, len(received.Path), len(received.Path))
                     sig.Path = append(sig.Path, node.Index)
                     copy(sig.Path, received.Path)
@@ -136,7 +139,7 @@ func CreateNode(overhang byte, cost int, level int, index byte) *Node {
     node := Node{}
     node.Overhang = overhang
     node.Cost = cost
-    node.Input = make(chan *Signal)
+    node.Input = make(chan *Signal, CHANNEL_BUFFER_SIZE)
     node.Level = level
     node.Index = index
     return &node
@@ -174,7 +177,7 @@ func CreateInitialSignal(max_levels int) *Signal {
 }
 
 func CreateSinc() *Sinc {
-    return &Sinc{make(chan *Signal), 0, make(chan Signal), make(chan int)}
+    return &Sinc{make(chan *Signal, CHANNEL_BUFFER_SIZE), 0, make(chan Signal), make(chan int)}
 }
 
 func SendInitialSignals(nodes []*Node, level_depth int) {
@@ -239,4 +242,12 @@ func BuildGrid(input [][]byte) ([][]*Node, *Sinc){
 
     go RunSinc(sinc)
     return levels, sinc
+}
+
+func Set_infinite_cost(cost int) {
+    INFINITE_COST = cost
+}
+
+func Set_max_repeats(max_repeats byte) {
+    MAX_REPEATS = max_repeats 
 }

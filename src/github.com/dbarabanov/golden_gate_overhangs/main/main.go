@@ -6,34 +6,72 @@ import (
     "fmt"
     "time"
     "math"
+    "runtime"
 )
 
 func main() {
 
-    const TOTAL_JUNCTIONS = 5
+    const TOTAL_JUNCTIONS = 3
 
+    runtime.GOMAXPROCS(6)
     const CUTS = 5
+    const INFINITE_COST = 999999
+    const DATA_FROM_FILE = true
+
 //    input byte[][] := {{1,2,3,4,5},{6,7,8,9,10}}
 //    input := [][]byte{{11,12,13,14,15},{26, 27,28,29,210}}
-    input := GenerateRandomGrid(CUTS, TOTAL_JUNCTIONS)
-//    input := GridFromFile("junctions.txt")
+    var overhangs []string    
+    var input [][]byte
+
+    input = GenerateRandomGrid(CUTS, TOTAL_JUNCTIONS)
+    if DATA_FROM_FILE {
+        overhangs, input = GridFromFile("junctions.txt")
+    }
+    
 
     fmt.Printf("input: %v\n", input)
 
-//    grid, sinc := BuildRandomGrid(TOTAL_JUNCTIONS)
-    grid, sinc := BuildGrid(input)
+    Set_infinite_cost(INFINITE_COST)
+    best_cost := INFINITE_COST
+    var Max_repeats byte = 0
+    var sig Signal
+    var sinc_signals int
 
-    fmt.Printf("Starting...\n")
-    SendInitialSignals(grid[0], len(grid))
+    start_time := time.Now()
+    for best_cost == INFINITE_COST && Max_repeats < 4 {
+        Set_max_repeats(Max_repeats)
+        fmt.Printf("Starting evaluation for MAX_REPEATS = %v\n", Max_repeats)
+    //    grid, sinc := BuildRandomGrid(TOTAL_JUNCTIONS)
+        grid, sinc := BuildGrid(input)
 
-//    fmt.Printf("%v\n", <-sinc.Output)
-    sig := <-sinc.Best_signal
-    sinc_signals := <-sinc.Total_signals
+        SendInitialSignals(grid[0], len(grid))
+
+        sig = <-sinc.Best_signal
+        sinc_signals = <-sinc.Total_signals
+        Max_repeats += 1
+        best_cost = sig.Cost
+    }
+    run_time := time.Since(start_time)
     fmt.Printf("Best signal: %v\n", sig)
+    fmt.Printf("Execution time: %v\n", run_time)
     fmt.Printf("Total signals: %v\n", sinc_signals)
     max_signals_possible := int64(math.Pow(CUTS, TOTAL_JUNCTIONS))
-    fmt.Printf("Max possible: %v\n", max_signals_possible)
-    fmt.Printf("Total signal throughput: %v\n", float64(sinc_signals)/float64(max_signals_possible))
+    fmt.Printf("Max possible signal: %v\n", max_signals_possible)
+    fmt.Printf("Signal throughput: %v\n", float64(sinc_signals)/float64(max_signals_possible))
+    fmt.Printf("Best neutrality score: %v\n", sig.Cost)
+    fmt.Printf("BEST_MAX_REPEATS: %v\n", Max_repeats-1)
+
+    stats := ""
+    if sig.Cost == INFINITE_COST {
+        stats += "Input set of junctions is incompatible."
+    } else {
+        stats += fmt.Sprintf("Best neutrality score: %v\n", sig.Cost)
+        stats += fmt.Sprintf("MAXIMUM_IDENTITIES_GOLDEN_GATE_OVERHANGS_COMPATIBLE: %v\n", Max_repeats-1)
+        stats += fmt.Sprintf("Execution time: %v\n", run_time)
+    }
+    if DATA_FROM_FILE {
+        Write_results_to_file(sig.Path, overhangs, stats)
+    }
 
     time.Sleep(1000)
 }
