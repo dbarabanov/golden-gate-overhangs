@@ -4,28 +4,106 @@ import (
     "fmt"
     )
 
-func TestEncode1(t *testing.T) {
-    encodings := map[string] byte {"A": 0, "C": 1, "G": 2, "T": 3}
+func TestEncodeBase(t *testing.T) {
+    encodings := map[byte] byte {'A': 0, 'C': 1, 'G': 2, 'T': 3}
     for key, value := range encodings {
-        actual := Encode1(key)
+        actual := EncodeBase(key)
         if  value != actual {
-            t.Errorf("Encode1(\"%v\") = %v, want %v", key, actual, value)
+            t.Errorf("EncodeBase('%c') = %v, want %v", key, actual, value)
         }
     }
 }
 
-func TestEncode1Panic(t *testing.T) {
-    letter := "x"
+func TestEncodeBasePanic(t *testing.T) {
+    var letter byte = 'x' 
     defer func() {
-        expected := fmt.Sprintf("Invalid argument to Encode1(): %v. Must be one of A,C,T,G.", letter)
+        expected := fmt.Sprintf("Invalid argument to EncodeBase(): '%c'. Must be one of A,C,T,G.", letter)
         actual := recover()
         if  expected != actual {
-            t.Errorf("Encode1(\"%v\") panic msg:\n \"%v\"\n    want: \n\"%v\"", letter, actual, expected)
-        }
-
-        if r := recover(); r != nil {
-            fmt.Println("Recovered in f", r)
+            t.Errorf("EncodeBase('%c') panic msg:\n \"%v\"\n    want: \n\"%v\"", letter, actual, expected)
         }
     }()
-    Encode1(letter)
+    EncodeBase(letter)
 }
+
+func TestDecodeBase(t *testing.T) {
+    encodings := map[string] byte {"A": 0, "C": 1, "G": 2, "T": 3}
+    for key, value := range encodings {
+        actual := DecodeBase(value)
+        if  key != actual {
+            t.Errorf("DecodeBase(\"%v\") = %v, want %v.", value, actual, key)
+        }
+    }
+}
+
+func TestDecodeBasePanic(t *testing.T) {
+    var encoded_letter byte = 10
+    defer func() {
+        expected := fmt.Sprintf("Invalid argument to DecodeBase(): %v. Must be one of 0,1,2,3.", encoded_letter)
+        actual := recover()
+        if  expected != actual {
+            t.Errorf("DecodeBase(\"%v\") panic msg:\n \"%v\"\n    want: \n\"%v\".", encoded_letter, actual, expected)
+        }
+    }()
+    DecodeBase(encoded_letter)
+}
+
+func TestEncodeOverhang(t *testing.T) {
+    encodings := map[string] byte {"AAAA": 0, "AAAC": 1, "TTTT": 255}
+    for key, value := range encodings {
+        actual := EncodeOverhang(key)
+        if  value != actual {
+            t.Errorf("EncodeOverhang(\"%v\") = %v, want %v.", key, actual, value)
+        }
+    }
+}
+
+func TestEncodeOverhangPanic(t *testing.T) {
+    overhang := "AATAA" //5 letters
+    defer func() {
+        expected := fmt.Sprintf("Invalid argument to EncodeOverhang(): %v. Must be a 4-letter string of A,C,T,G.", overhang)
+        actual := recover()
+        if  expected != actual {
+            t.Errorf("EncodeOverhang(\"%v\") panic msg:\n \"%v\"\n    want: \n\"%v\".", overhang, actual, expected)
+        }
+    }()
+    EncodeOverhang(overhang)
+}
+
+func TestDecodeOverhang(t *testing.T) {
+    decodings := map[byte] string{0: "AAAA", 1: "AAAC", 255: "TTTT"}
+    for key, value := range decodings {
+        actual := DecodeOverhang(key)
+        if  value != actual {
+            t.Errorf("DecodeOverhang(\"%v\") = %v, want %v.", key, actual, value)
+        }
+    }
+}
+
+func TestComplementaryOverhang(t *testing.T) {
+    overhang := "ACCG"
+    expected := "TGGC"
+    actual := ComplementaryOverhang(overhang)
+    if  expected != actual {
+        t.Errorf("ComplementaryOverhang(\"%v\") = %v, want %v.", overhang, actual, expected)
+    }
+}
+
+func TestReverseOverhang(t *testing.T) {
+    overhang := "ACCG"
+    expected := "GCCA"
+    actual := ReverseOverhang(overhang)
+    if  expected != actual {
+        t.Errorf("ComplementaryOverhang(\"%v\") = %v, want %v.", overhang, actual, expected)
+    }
+}
+
+func TestPartnerOverhang(t *testing.T) {
+    overhang := "ACCG"
+    expected := "CGGT"
+    actual := PartnerOverhang(overhang)
+    if  expected != actual {
+        t.Errorf("PartnerOverhang(\"%v\") = %v, want %v.", overhang, actual, expected)
+    }
+}
+

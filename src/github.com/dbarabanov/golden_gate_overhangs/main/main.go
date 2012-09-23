@@ -74,17 +74,12 @@ func main() {
     }
 
     time.Sleep(1000)
+//    Test_utils()
 }
 
 func Test_utils() {
     seq := "TAGC"
     fmt.Printf("Encoding: %v\n", seq)
-    encoded4 := Encode4(seq)
-    fmt.Printf("Encoded: %0#8b\n", encoded4)
-    fmt.Printf("Decoded: %v\n", Decode4(encoded4))
-    fmt.Printf("A: %c\n", 'A')
-    fmt.Printf("Encoded A: %c\n", Encode1("A"))
-    fmt.Printf("Encoded A: %b\n", Encode1("A"))
     fmt.Printf("Encoded A: %0#8b\n", EncodeBase('A'))
     fmt.Printf("Encoded C: %0#8b\n", EncodeBase('C'))
     overhang := "ATCG" 

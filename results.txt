@@ -1,6 +1,6 @@
 Best neutrality score: 6
 MAXIMUM_IDENTITIES_GOLDEN_GATE_OVERHANGS_COMPATIBLE: 2
-Execution time: 138.536ms
+Execution time: 123.505ms
 
 Overhangs: 
 

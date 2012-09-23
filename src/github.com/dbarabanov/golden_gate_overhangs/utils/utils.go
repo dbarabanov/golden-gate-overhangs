@@ -8,21 +8,9 @@ import (
     "time"
     )
 
-func Encode1(letter string) (encoded byte) {
-//    letter := strings.ToUpper(base)
-    switch {
-        case letter == "A":
-            return 0
-        case letter == "C":
-            return 1
-        case letter == "G":
-            return 2
-        case letter == "T":
-            return 3
-    }
-    panic(fmt.Sprintf("Invalid argument to Encode1(): %v. Must be one of A,C,T,G.", letter))
-}
-
+//Encodes nucleotide letter (A,C,T,G) into byte (0,1,2,3). Panics if input is not one of A,C,T,G.
+//
+//  EncodeBase('C') = 1
 func EncodeBase(letter byte) (encoded byte) {
     switch {
         case letter == 'A':
@@ -34,10 +22,13 @@ func EncodeBase(letter byte) (encoded byte) {
         case letter == 'T':
             return 3
     }
-    panic(fmt.Sprintf("Invalid argument to Encode1(): %v. Must be one of A,C,T,G.", letter))
+    panic(fmt.Sprintf("Invalid argument to EncodeBase(): '%c'. Must be one of A,C,T,G.", letter))
 }
 
-func Decode1(encoded byte) (letter string) {
+//Decode byte(0,1,2,3) into nucleotide letter (A,C,T,G). Panics if input is not 0,1,2, or 3.
+//
+//  DecodeBase(1) = "C"
+func DecodeBase(encoded byte) (letter string) {
      switch {
         case encoded == 0:
             return "A"
@@ -48,45 +39,62 @@ func Decode1(encoded byte) (letter string) {
         case encoded == 3:
             return "T"
     }
-    panic(fmt.Sprintf("Invalid argument to Decode1(): %v. Must be one of 0,1,2,3.", letter))
+    panic(fmt.Sprintf("Invalid argument to DecodeBase(): %v. Must be one of 0,1,2,3.", encoded))
 }
 
-func Encode4(seq string) (encoded byte) {
-    if len(seq) != 4 {
-        panic(fmt.Sprintf("Invalid argument to Encode4(): %v. Must be a 4-letter string of A,C,T,G.", seq))
-    }
-//#    first := Encode1(seq[0])
-    first := Encode1(string(seq[0]))
-    second := Encode1(string(seq[1]))
-    third := Encode1(string(seq[2]))
-    forth := Encode1(string(seq[3]))
-    return (forth)|(third<<2)|(second<<4)|(first<<6)
-}
-
-func EncodeOverhang1(seq string) (encoded byte) {
-    if len(seq) != 4 {
-        panic(fmt.Sprintf("Invalid argument to Encode4(): %v. Must be a 4-letter string of A,C,T,G.", seq))
-    }
-    first := EncodeBase(seq[0])
-    second := EncodeBase(seq[1])
-    third := EncodeBase(seq[2])
-    forth := EncodeBase(seq[3])
-    return (forth)|(third<<2)|(second<<4)|(first<<6)
-}
-
+//EncodeOverhang encodes 4-bp overhang into byte. 2 most significant bits in the resulting byte correspond to first base pair in overhang. Similar to least signigicat bits and 2 middle bit pairs. See also EncodeBase.
+//
+//  EncodeOverhang("AAAC") = 1
+//  EncodeOverhang("TTTT") = 255
 func EncodeOverhang(seq string) (encoded byte) {
     if len(seq) != 4 {
-        panic(fmt.Sprintf("Invalid argument to EncodeOverhang(): \"%v\". Must be a 4-letter string of A,C,T,G.", seq))
+        panic(fmt.Sprintf("Invalid argument to EncodeOverhang(): %v. Must be a 4-letter string of A,C,T,G.", seq))
     }
     return (EncodeBase(seq[0])<<6)|(EncodeBase(seq[1])<<4)|(EncodeBase(seq[2])<<2)|(EncodeBase(seq[3]))
 }
 
-func Decode4(b byte) (s string) {
-    return Decode1(b>>6) + Decode1(b<<2>>6) + Decode1(b<<4>>6) + Decode1(b<<6>>6)
+//DecodeOverhang decodes byte into 4-bp overhang. It's a reverse function of EncodeOverhang.
+//
+//  DecodeOverhang(1) = "AAAC"
+//  DecodeOverhang(255) = "TTTT" 
+func DecodeOverhang(b byte) (s string) {
+    return DecodeBase(b>>6) + DecodeBase(b<<2>>6) + DecodeBase(b<<4>>6) + DecodeBase(b<<6>>6)
 }
 
-func DecodeOverhang(b byte) (s string) {
-    return Decode4(b)
+//ComplementaryOverhang returns an overhang that is complementary to the overhang passed as argument.
+//
+//  ComplementaryOverhang("ACCG") = "TGGC"
+func ComplementaryOverhang(overhang string) string {
+    return DecodeOverhang(Complementary(EncodeOverhang(overhang)))
+}
+
+//Complementary returns byte-encoded complementary overhang. See ComplementaryOverhang.
+func Complementary(b byte) byte {
+    return 255-b 
+}
+
+//ReverseOverhang returns an overhang that is a reverse of the overhang passed as an argument.
+//
+//  ReverseOverhang("ACCG") = "GCCA"
+func ReverseOverhang(overhang string) string {
+    return DecodeOverhang(Reverse(EncodeOverhang(overhang)))
+}
+
+//Reverse returns byte-encoded reverse overhang. See ReverseOverhang.
+func Reverse(b byte) byte {
+    return b&3<<6 + b&12<<2 + b&48>>2 + b&192>>6
+}
+
+//PartnerOverhang returns reverse-complement overhang.
+//
+//  PartnerOverhang("ACCG") = CGGT
+func PartnerOverhang(overhang string) string {
+    return DecodeOverhang(Partner(EncodeOverhang(overhang)))
+}
+
+//Partner returns byte-encoded reverse-complement overhang. See PartnerOverhang.
+func Partner(b byte) byte {
+    return Reverse(Complementary(b)) 
 }
 
 func AreOverhangsCompatible(overhang1 string, overhang2 string, max_repeats byte) bool {
@@ -97,36 +105,12 @@ func AreCompatible(b1 byte, b2 byte, max_repeats byte) bool {
     return GetRepeatCount(b1, b2) <= max_repeats 
 }
 
-func ComplementaryOverhang(overhang string) string {
-    return DecodeOverhang(Complementary(EncodeOverhang(overhang)))
-}
-
-func Complementary(b byte) byte {
-    return 255-b 
-}
-
-func ReverseOverhang(overhang string) string {
-    return DecodeOverhang(Reverse(EncodeOverhang(overhang)))
-}
-
-func Reverse(b byte) byte {
-    return b&3<<6 + b&12<<2 + b&48>>2 + b&192>>6
-}
-
 func IsOverhangSelfCompatible(overhang string, max_repeats byte) bool{
     return IsSelfCompatible(EncodeOverhang(overhang), max_repeats)
 }
 
 func IsSelfCompatible(b byte, max_repeats byte) bool {
     return AreCompatible(b, Partner(b), max_repeats)
-}
-
-func PartnerOverhang(overhang string) string {
-    return DecodeOverhang(Partner(EncodeOverhang(overhang)))
-}
-
-func Partner(b byte) byte {
-    return Reverse(Complementary(b)) 
 }
 
 func IsOverhangCompatibleWithMany(overhang string, overhangs []string, max_repeats byte) bool {
