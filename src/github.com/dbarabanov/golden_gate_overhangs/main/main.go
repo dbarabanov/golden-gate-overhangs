@@ -78,24 +78,10 @@ func main() {
 }
 
 func Test_utils() {
-    seq := "TAGC"
-    fmt.Printf("Encoding: %v\n", seq)
-    fmt.Printf("Encoded A: %0#8b\n", EncodeBase('A'))
-    fmt.Printf("Encoded C: %0#8b\n", EncodeBase('C'))
-    overhang := "ATCG" 
-    fmt.Println("Overhang: "+overhang)
-    encoded := EncodeOverhang(overhang)
-    fmt.Printf("Encoded: %0#8b\n", encoded)
-    decoded := DecodeOverhang(encoded)
-    fmt.Printf("Decoded: %v\n", decoded)
     o1 := "ATCT"
     o2 := "ACAC"
     b1 := EncodeOverhang(o1)
     b2 := EncodeOverhang(o2)
-//    fmt.Printf("IsCompatible("+o1+", "+o2+"): %v\n", IsCompatible(b1, b2))
-    fmt.Printf("Complementary("+o1+"): %v\n", ComplementaryOverhang(o1))
-    fmt.Printf("Reverse("+o1+"): %v\n", ReverseOverhang(o1))
-    fmt.Printf("Partner("+o1+"): %v\n", PartnerOverhang(o1))
     fmt.Printf("GetRepeatCount("+o1+", "+o2+"): %v\n", GetRepeatCount(b1, b2))
     fmt.Printf("AreOverhangsCompatible("+o1+", "+o2+", 2): %v\n", AreOverhangsCompatible(o1, o2, 2))
     fmt.Printf("IsOverhangSelfCompatible("+o1+", 2): %v\n", IsOverhangSelfCompatible(o1, 2))

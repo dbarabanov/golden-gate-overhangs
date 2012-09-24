@@ -107,3 +107,13 @@ func TestPartnerOverhang(t *testing.T) {
     }
 }
 
+func TestGetOverhangRepeatCount(t *testing.T) {
+    overhang1 := "AAAA"
+    overhang2 := "AAAT"
+    var expected byte = 3
+    actual := GetOverhangRepeatCount(overhang1, overhang2)
+    if  expected != actual {
+        t.Errorf("GetOverhangRepeatCount(\"%v\", \"%v\") = %v, want %v.", overhang1, overhang2, actual, expected)
+    }
+}
+

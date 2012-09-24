@@ -97,6 +97,34 @@ func Partner(b byte) byte {
     return Reverse(Complementary(b)) 
 }
 
+//GetOverhangRepeatCount returns the number of nucleotides that are the same in the same positions in 2 overhangs.
+//
+//  GetOverhangRepeatCount("AAAT", "AAAA") = 3
+//  GetOverhangRepeatCount("CCGG", "GGCC") = 0
+func GetOverhangRepeatCount(overhang1 string, overhang2 string) byte{
+    return GetRepeatCount(EncodeOverhang(overhang1), EncodeOverhang(overhang2))
+}
+
+//GetRepeatCount returns the number of repeats between 2 byte-encoded overhangs. See GetOverhangRepeatCount.
+func GetRepeatCount(b1 byte, b2 byte) byte {
+//+1 for same base at each of 4 position.
+    return isZero((b1^b2)&3) +
+        isZero((b1^b2)&12) +
+        isZero((b1^b2)&48)+
+        isZero((b1^b2)&192)
+//    return 4-(
+//        (((b1^b2)&1)|((b1^b2)&2>>1)) + 
+//        (((b1^b2)&4>>2)|((b1^b2)&8>>3)) + 
+//        (((b1^b2)&16>>4)|((b1^b2)&32>>5)) + 
+//        (((b1^b2)&64>>6)|((b1^b2)&128>>7)))
+}
+
+//can't cast bool to byte in Go. This little function to the rescue.
+func isZero(b byte) byte {
+    if b==0 {return 1}
+    return 0
+}
+
 func AreOverhangsCompatible(overhang1 string, overhang2 string, max_repeats byte) bool {
     return AreCompatible(EncodeOverhang(overhang1), EncodeOverhang(overhang2), max_repeats)
 }
@@ -132,14 +160,6 @@ func IsCompatibleWithMany(overhang byte, overhangs []byte, max_repeats byte) boo
         }
     }
     return true
-}
-
-func GetRepeatCount(b1 byte, b2 byte) byte {
-    return 4-(
-        (((b1^b2)&1)|((b1^b2)&2>>1)) + 
-        (((b1^b2)&4>>2)|((b1^b2)&8>>3)) + 
-        (((b1^b2)&16>>4)|((b1^b2)&32>>5)) + 
-        (((b1^b2)&64>>6)|((b1^b2)&128>>7)))
 }
 
 func GenerateRandomGrid(cuts int, levels int) [][]byte {
